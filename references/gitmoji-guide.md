@@ -1,111 +1,64 @@
-# Gitmoji Guide
+# Gitmoji Reference
 
-Complete reference of gitmojis for semantic commit messages.
+## Priority Detection
 
-## Semantic Gitmoji Mapping
+Check in order:
+1. **Special**: revert → ⏪, merge → 🔀, hotfix → 🚑, wip → 🚧
+2. **Security** (always wins): security, vulnerability, xss, cve → 🔐
+3. **Simple fix**: typo, quick, one-liner, oops, formatting → 🩹
+4. **Main category** (score-based):
+   - feat, add, new, implement → ✨
+   - fix, bug, issue → 🐛
+   - doc, docs, readme → 📝
+   - test, spec → 🧪
+   - refactor, extract → ♻️
+   - optimize, perf, cache → ⚡
+   - css, style, ui, design → 💄
+   - depend, npm, package → 📦
+   - config, webpack, eslint → ⚙️
+   - rewrite, redesign → 🔨
+   - remove, delete, deprecate → 🗑️
+5. **Others**: deploy → 🚀, seo → 🔍, translate → 🗣️, analytics → 📈, linter → 🚨
 
-### Features & Enhancement
-| Emoji | Code | Use Case | Example |
-|-------|------|----------|---------|
-| ✨ | `:sparkles:` | Introduce new features | `✨ Add user authentication module` |
-| 🎨 | `:art:` | Improve structure/format of code | `🎨 Refactor API response handler` |
-| ⚡ | `:zap:` | Improve performance | `⚡ Optimize database queries` |
-| 🚀 | `:rocket:` | Deploy to production | `🚀 Release v2.0.0` |
-| 💄 | `:lipstick:` | Add/update UI or styles | `💄 Update button styling` |
+## Simple vs Bug Fix
 
-### Bug Fixes & Issues
-| Emoji | Code | Use Case | Example |
-|-------|------|----------|---------|
-| 🐛 | `:bug:` | Fix a bug | `🐛 Fix null pointer exception` |
-| 🔧 | `:wrench:` | Fix configuration files | `🔧 Update environment variables` |
-| 🩹 | `:adhesive_bandage:` | Simple bug fix (one-liner) | `🩹 Fix typo in config` |
-| 🔨 | `:hammer:` | Major refactoring/rewrite | `🔨 Rewrite authentication system` |
+**🩹 Simple** (trivial): typos, one-liners, formatting, marked "quick/oops/minor"
 
-### Code Quality
-| Emoji | Code | Use Case | Example |
-|-------|------|----------|---------|
-| ♻️ | `:recycle:` | Refactor code | `♻️ Extract common utilities` |
-| 📝 | `:memo:` | Add/update documentation | `📝 Add API documentation` |
-| 🧪 | `:test_tube:` | Add/update tests | `🧪 Add integration tests` |
-| ✅ | `:white_check_mark:` | Pass tests/CI checks | `✅ All tests passing` |
-| 📊 | `:bar_chart:` | Add/update analytics | `📊 Add performance metrics` |
+**🐛 Bug** (real problem): null pointer, crashes, logic errors, actual bugs
 
-### Dependencies & Build
-| Emoji | Code | Use Case | Example |
-|-------|------|----------|---------|
-| 📦 | `:package:` | Add/update dependencies | `📦 Update npm packages` |
-| 🔐 | `:lock:` | Fix security vulnerability | `🔐 Patch XSS vulnerability` |
-| ⬆️ | `:arrow_up:` | Upgrade dependencies | `⬆️ Upgrade React to v18` |
-| ⬇️ | `:arrow_down:` | Downgrade dependencies | `⬇️ Revert lodash version` |
-| 🔨 | `:hammer:` | Build system changes | `🔨 Update webpack config` |
+## Emoji Catalog
 
-### Releases & Versions
-| Emoji | Code | Use Case | Example |
-|-------|------|----------|---------|
-| 🏷️ | `:label:` | Release/version tag | `🏷️ Release v1.0.0` |
-| 📈 | `:chart_with_upwards_trend:` | Add/update benchmarks | `📈 Performance improvement` |
-
-### Documentation & Comments
-| Emoji | Code | Use Case | Example |
-|-------|------|----------|---------|
-| 📚 | `:books:` | Add documentation files | `📚 Add developer guide` |
-| 💬 | `:speech_balloon:` | Update/add comments | `💬 Add function documentation` |
-| 🗣️ | `:speaking_head:` | Update translations | `🗣️ Add Spanish translations` |
-
-### Cleanup & Maintenance
-| Emoji | Code | Use Case | Example |
-|-------|------|----------|---------|
-| 🗑️ | `:wastebasket:` | Remove files/code | `🗑️ Remove deprecated API` |
-| 🧹 | `:broom:` | Clean up code/files | `🧹 Remove unused imports` |
-| 🎯 | `:dart:` | Focus/target specific task | `🎯 Focus on core features` |
-
-### Config & CI/CD
-| Emoji | Code | Use Case | Example |
-|-------|------|----------|---------|
-| ⚙️ | `:gear:` | Configuration changes | `⚙️ Update CI/CD pipeline` |
-| 🔄 | `:repeat:` | Recurring task/automation | `🔄 Auto-format on save` |
-| 🚀 | `:rocket:` | Deployment | `🚀 Deploy to staging` |
-
-### Special Cases
-| Emoji | Code | Use Case | Example |
-|-------|------|----------|---------|
-| 💡 | `:bulb:` | Add/update ideas/comments | `💡 Add performance tips` |
-| 🎭 | `:performing_arts:` | Mock implementations | `🎭 Add mock API responses` |
-| 🚨 | `:rotating_light:` | Remove linter warnings | `🚨 Fix ESLint errors` |
-| 🔍 | `:mag:` | SEO improvements | `🔍 Improve SEO metadata` |
-
-## Selection Algorithm
-
-When selecting a gitmoji, follow this decision tree:
-
-1. **Is this a new feature?** → ✨ `:sparkles:`
-2. **Is this a bug fix?** → 🐛 `:bug:` (or 🩹 if simple)
-3. **Is this documentation?** → 📝 `:memo:` or 📚 `:books:`
-4. **Is this a refactor?** → ♻️ `:recycle:` or 🎨 `:art:` (style-focused)
-5. **Is this a performance improvement?** → ⚡ `:zap:`
-6. **Is this dependency-related?** → 📦 `:package:` or ⬆️/⬇️
-7. **Is this security-related?** → 🔐 `:lock:`
-8. **Is this testing?** → 🧪 `:test_tube:`
-9. **Is this a major rewrite?** → 🔨 `:hammer:`
-10. **Is this cleanup?** → 🗑️ or 🧹 `:broom:`
-
-## Format
-
-Standard format: `emoji type(scope): subject`
-
-```
-✨ feat(auth): Add two-factor authentication
-
-- Implement TOTP support
-- Update user model
-- Add verification endpoint
-
-Closes #123
-```
-
-## Tips
-
-- **One gitmoji per commit**: Each commit should have exactly one primary emoji
-- **Keep subjects short**: Max 50 characters in the subject line
-- **Be specific**: Use the most appropriate emoji, not just a generic one
-- **Combine with Conventional Commits**: Emoji + type + scope for maximum clarity
+| Emoji | Code | Use |
+|-------|------|-----|
+| ✨ | sparkles | New features |
+| 🐛 | bug | Bug fixes |
+| 🩹 | adhesive_bandage | Simple/trivial fixes |
+| 📝 | memo | Documentation |
+| 🧪 | test_tube | Tests |
+| ♻️ | recycle | Refactoring |
+| ⚡ | zap | Performance |
+| 💄 | lipstick | UI/Styles |
+| 📦 | package | Dependencies |
+| 🔐 | lock | Security |
+| ⚙️ | gear | Config |
+| 🗑️ | wastebasket | Remove/Delete |
+| 🔨 | hammer | Major rewrite |
+| 🚀 | rocket | Deploy |
+| ⏪ | rewind | Revert |
+| 🔀 | twisted_rightwards_arrows | Merge |
+| 🚑 | ambulance | Hotfix |
+| 🚧 | construction | WIP |
+| 🔍 | mag | SEO |
+| 🗣️ | speaking_head | Translations |
+| 📈 | chart_with_upwards_trend | Analytics |
+| 🚨 | rotating_light | Linter |
+| 🧹 | broom | Cleanup |
+| 🎯 | dart | Target focus |
+| 🔄 | repeat | Automation |
+| 💡 | bulb | Ideas |
+| 🎭 | performing_arts | Mocks |
+| 📚 | books | Docs files |
+| ✅ | white_check_mark | Tests passing |
+| 🏷️ | label | Release tag |
+| ⬆️ | arrow_up | Upgrade deps |
+| ⬇️ | arrow_down | Downgrade deps |
