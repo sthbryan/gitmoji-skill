@@ -5,7 +5,9 @@
 # Universal: works on Linux, macOS, WSL (no dependencies required)
 #===============================================================================
 
-set -euo pipefail
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    set -euo pipefail
+fi
 
 # Emoji constants
 EMOJI_SPARKLES="✨"      # New feature
@@ -46,7 +48,10 @@ EMOJI_REPEAT="🔄"         # Automation
 # Logging functions (debug mode)
 #-------------------------------------------------------------------------------
 debug() {
-    [[ "${DEBUG:-0}" == "1" ]] && echo "[DEBUG] $*" >&2
+    if [[ "${DEBUG:-0}" == "1" ]]; then
+        echo "[DEBUG] $*" >&2
+    fi
+    return 0
 }
 
 #-------------------------------------------------------------------------------
@@ -57,13 +62,10 @@ lowercase() {
 }
 
 #-------------------------------------------------------------------------------
-# Check if string contains substring (case-insensitive)
+# Check if a lowercased string contains a substring
 #-------------------------------------------------------------------------------
-contains() {
-    local text needle
-    text=$(lowercase "$1")
-    needle=$(lowercase "$2")
-    [[ "$text" == *"$needle"* ]]
+contains_lc() {
+    [[ "$1" == *"$2"* ]]
 }
 
 #-------------------------------------------------------------------------------
@@ -73,49 +75,24 @@ detect_special() {
     local msg="$1"
     local lower
     lower=$(lowercase "$msg")
-    
-    # Revert commits
-    if contains "$msg" "revert"; then
-        echo "$EMOJI_REVERT"
-        return 0
-    fi
-    
-    # Merge commits
-    if contains "$msg" "merge"; then
-        echo "$EMOJI_MERGE"
-        return 0
-    fi
-    
-    # Hotfix
-    if contains "$msg" "hotfix"; then
-        echo "$EMOJI_HOTFIX"
-        return 0
-    fi
-    
-    # WIP (Work in Progress)
-    if [[ "$lower" == *"wip"* ]] || [[ "$lower" == *"work in progress"* ]]; then
-        echo "$EMOJI_WIP"
-        return 0
-    fi
-    
-    # Squash / fixup commits
-    if contains "$msg" "squash"; then
-        echo "$EMOJI_WASTEBASKET"
-        return 0
-    fi
-    
+
+    contains_lc "$lower" "revert" && { echo "$EMOJI_REVERT"; return 0; }
+    contains_lc "$lower" "merge" && { echo "$EMOJI_MERGE"; return 0; }
+    contains_lc "$lower" "hotfix" && { echo "$EMOJI_HOTFIX"; return 0; }
+    (contains_lc "$lower" "wip" || contains_lc "$lower" "work in progress") && { echo "$EMOJI_WIP"; return 0; }
+    contains_lc "$lower" "squash" && { echo "$EMOJI_WASTEBASKET"; return 0; }
+
     return 1
 }
 
 #-------------------------------------------------------------------------------
-# Detect simple/quick fixes (should return 🩹)
+# Detect simple/quick fixes (🩹)
 #-------------------------------------------------------------------------------
 detect_simple_fix() {
     local msg="$1"
     local lower
     lower=$(lowercase "$msg")
-    
-    # Quick indicators that this is a simple fix
+
     local simple_patterns=(
         "typo" "typo:" "typo fix"
         "fix typo" "fix a typo"
@@ -126,15 +103,16 @@ detect_simple_fix() {
         "mistake" "silly"
         "formatting" "fmt" "whitespace"
     )
-    
+
+    local pattern
     for pattern in "${simple_patterns[@]}"; do
-        if contains "$msg" "$pattern"; then
+        if contains_lc "$lower" "$pattern"; then
             debug "Simple fix detected: $pattern"
             echo "$EMOJI_ADHESIVE_BANDAGE"
             return 0
         fi
     done
-    
+
     return 1
 }
 
@@ -145,8 +123,7 @@ detect_priority() {
     local msg="$1"
     local lower
     lower=$(lowercase "$msg")
-    
-    # Security - HIGHEST PRIORITY
+
     local security_patterns=(
         "security" "vulnerability" "cve" "exploit"
         "xss" "csrf" "sql injection" "injection"
@@ -155,23 +132,29 @@ detect_priority() {
         "patch security" "fix security" "security fix"
         "malicious" "attack" "breach"
     )
-    
+
+    local pattern
     for pattern in "${security_patterns[@]}"; do
-        if contains "$msg" "$pattern"; then
+        if contains_lc "$lower" "$pattern"; then
             debug "Security priority: $pattern"
             echo "$EMOJI_LOCK"
             return 0
         fi
     done
-    
+
     # Linter/ESLint warnings
-    if contains "$msg" "linter" || contains "$msg" "eslint" || contains "$msg" "prettier"; then
-        if contains "$msg" "fix" || contains "$msg" "warning" || contains "$msg" "error"; then
-            echo "$EMOJI_WARNING"
-            return 0
-        fi
+    if (contains_lc "$lower" "linter" || contains_lc "$lower" "eslint" || contains_lc "$lower" "prettier") \
+       && (contains_lc "$lower" "fix" || contains_lc "$lower" "warning" || contains_lc "$lower" "error"); then
+        echo "$EMOJI_WARNING"
+        return 0
     fi
-    
+
+    # Explicit test pass/build pass
+    if (contains_lc "$lower" "tests passing" || contains_lc "$lower" "all tests pass" || contains_lc "$lower" "green build" || contains_lc "$lower" "build passing"); then
+        echo "$EMOJI_CHECK"
+        return 0
+    fi
+
     return 1
 }
 
@@ -185,274 +168,223 @@ detect_category() {
     local score=0
     local best_category=""
     local best_score=0
-    
-    #--------------------------------------------------------------------------
+
     # Feature (✨)
-    #--------------------------------------------------------------------------
     score=0
-    contains "$msg" "feat" && ((score+=3))
-    contains "$msg" "add" && ((score+=2))
-    contains "$msg" "new" && ((score+=2))
-    contains "$msg" "feature" && ((score+=3))
-    contains "$msg" "introduce" && ((score+=2))
-    contains "$msg" "implement" && ((score+=2))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_SPARKLES"
-    fi
-    
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "feat" && ((score+=3))
+    contains_lc "$lower" "add" && ((score+=2))
+    contains_lc "$lower" "new" && ((score+=2))
+    contains_lc "$lower" "feature" && ((score+=3))
+    contains_lc "$lower" "introduce" && ((score+=2))
+    contains_lc "$lower" "implement" && ((score+=2))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_SPARKLES"; }
+
     # Bug fix (🐛)
-    #--------------------------------------------------------------------------
     score=0
-    contains "$msg" "fix" && ((score+=3))
-    contains "$msg" "bug" && ((score+=3))
-    contains "$msg" "issue" && ((score+=1))
-    contains "$msg" "defect" && ((score+=2))
-    contains "$msg" "error" && ((score+=1))
-    contains "$msg" "exception" && ((score+=2))
-    contains "$msg" "crash" && ((score+=2))
-    contains "$msg" "fail" && ((score+=1))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_BUG"
-    fi
-    
-    #--------------------------------------------------------------------------
-    # Documentation (📝)
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "fix" && ((score+=3))
+    contains_lc "$lower" "bug" && ((score+=3))
+    contains_lc "$lower" "issue" && ((score+=1))
+    contains_lc "$lower" "defect" && ((score+=2))
+    contains_lc "$lower" "error" && ((score+=1))
+    contains_lc "$lower" "exception" && ((score+=2))
+    contains_lc "$lower" "crash" && ((score+=2))
+    contains_lc "$lower" "fail" && ((score+=1))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_BUG"; }
+
+    # Documentation (📝 / 📚)
     score=0
-    contains "$msg" "doc" && ((score+=3))
-    contains "$msg" "docs" && ((score+=3))
-    contains "$msg" "documentation" && ((score+=3))
-    contains "$msg" "readme" && ((score+=5))
-    contains "$msg" "guide" && ((score+=1))
-    contains "$msg" "manual" && ((score+=1))
-    contains "$msg" "changelog" && ((score+=2))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_MEMO"
-    fi
-    
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "doc" && ((score+=3))
+    contains_lc "$lower" "docs" && ((score+=3))
+    contains_lc "$lower" "documentation" && ((score+=3))
+    contains_lc "$lower" "readme" && ((score+=5))
+    contains_lc "$lower" "guide" && ((score+=1))
+    contains_lc "$lower" "manual" && ((score+=1))
+    contains_lc "$lower" "changelog" && ((score+=2))
+    contains_lc "$lower" ".md" && ((score+=2))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_MEMO"; }
+
     # Tests (🧪)
-    #--------------------------------------------------------------------------
     score=0
-    contains "$msg" "test" && ((score+=3))
-    contains "$msg" "spec" && ((score+=2))
-    contains "$msg" "unit test" && ((score+=3))
-    contains "$msg" "integration test" && ((score+=3))
-    contains "$msg" "e2e" && ((score+=2))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_TEST"
-    fi
-    
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "test" && ((score+=3))
+    contains_lc "$lower" "spec" && ((score+=2))
+    contains_lc "$lower" "unit test" && ((score+=3))
+    contains_lc "$lower" "integration test" && ((score+=3))
+    contains_lc "$lower" "e2e" && ((score+=2))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_TEST"; }
+
     # Refactor (♻️)
-    #--------------------------------------------------------------------------
     score=0
-    contains "$msg" "refactor" && ((score+=3))
-    contains "$msg" "refactoring" && ((score+=3))
-    contains "$msg" "restructure" && ((score+=2))
-    contains "$msg" "reorganize" && ((score+=2))
-    contains "$msg" "extract" && ((score+=1))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_RECYCLE"
-    fi
-    
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "refactor" && ((score+=3))
+    contains_lc "$lower" "refactoring" && ((score+=3))
+    contains_lc "$lower" "restructure" && ((score+=2))
+    contains_lc "$lower" "reorganize" && ((score+=2))
+    contains_lc "$lower" "extract" && ((score+=1))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_RECYCLE"; }
+
     # Performance (⚡)
-    #--------------------------------------------------------------------------
     score=0
-    contains "$msg" "perf" && ((score+=3))
-    contains "$msg" "performance" && ((score+=3))
-    contains "$msg" "optimize" && ((score+=3))
-    contains "$msg" "speed" && ((score+=2))
-    contains "$msg" "fast" && ((score+=1))
-    contains "$msg" "efficient" && ((score+=2))
-    contains "$msg" "caching" && ((score+=4))
-    contains "$msg" "lazy" && ((score+=3))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_ZAP"
-    fi
-    
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "perf" && ((score+=3))
+    contains_lc "$lower" "performance" && ((score+=3))
+    contains_lc "$lower" "optimize" && ((score+=3))
+    contains_lc "$lower" "speed" && ((score+=2))
+    contains_lc "$lower" "fast" && ((score+=1))
+    contains_lc "$lower" "efficient" && ((score+=2))
+    contains_lc "$lower" "caching" && ((score+=4))
+    contains_lc "$lower" "lazy" && ((score+=3))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_ZAP"; }
+
     # UI/Styles (💄)
-    #--------------------------------------------------------------------------
     score=0
-    contains "$msg" "style" && ((score+=2))
-    contains "$msg" "ui" && ((score+=2))
-    contains "$msg" "css" && ((score+=2))
-    contains "$msg" "design" && ((score+=1))
-    contains "$msg" "theme" && ((score+=2))
-    contains "$msg" "color" && ((score+=1))
-    contains "$msg" "layout" && ((score+=2))
-    contains "$msg" "responsive" && ((score+=2))
-    contains "$msg" "font" && ((score+=2))
-    contains "$msg" "icon" && ((score+=1))
-    contains "$msg" "button" && ((score+=1))
-    contains "$msg" "component" && ((score+=1))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_LIPSTICK"
-    fi
-    
-    #--------------------------------------------------------------------------
-    # Dependencies (📦)
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "style" && ((score+=2))
+    contains_lc "$lower" "ui" && ((score+=2))
+    contains_lc "$lower" "css" && ((score+=2))
+    contains_lc "$lower" "design" && ((score+=1))
+    contains_lc "$lower" "theme" && ((score+=2))
+    contains_lc "$lower" "color" && ((score+=1))
+    contains_lc "$lower" "layout" && ((score+=2))
+    contains_lc "$lower" "responsive" && ((score+=2))
+    contains_lc "$lower" "font" && ((score+=2))
+    contains_lc "$lower" "icon" && ((score+=1))
+    contains_lc "$lower" "button" && ((score+=1))
+    contains_lc "$lower" "component" && ((score+=1))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_LIPSTICK"; }
+
+    # Dependency direction (⬆️ / ⬇️ / 📦)
     score=0
-    contains "$msg" "depend" && ((score+=3))
-    contains "$msg" "package" && ((score+=2))
-    contains "$msg" "npm" && ((score+=2))
-    contains "$msg" "yarn" && ((score+=2))
-    contains "$msg" "pip" && ((score+=2))
-    contains "$msg" "gem" && ((score+=2))
-    contains "$msg" "install" && ((score+=2))
-    contains "$msg" "uninstall" && ((score+=2))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_PACKAGE"
-    fi
-    
-    #--------------------------------------------------------------------------
-    # Configuration (⚙️)
-    #--------------------------------------------------------------------------
+    (contains_lc "$lower" "upgrade" || contains_lc "$lower" "bump") && ((score+=4))
+    (contains_lc "$lower" "dependency" || contains_lc "$lower" "dependencies" || contains_lc "$lower" "package") && ((score+=3))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_ARROW_UP"; }
+
     score=0
-    contains "$msg" "config" && ((score+=3))
-    contains "$msg" "setup" && ((score+=2))
-    contains "$msg" "env" && ((score+=2))
-    contains "$msg" "environment" && ((score+=2))
-    contains "$msg" "build" && ((score+=1))
-    contains "$msg" "webpack" && ((score+=2))
-    contains "$msg" "babel" && ((score+=2))
-    contains "$msg" "tsconfig" && ((score+=2))
+    (contains_lc "$lower" "downgrade" || contains_lc "$lower" "rollback version") && ((score+=5))
+    (contains_lc "$lower" "dependency" || contains_lc "$lower" "dependencies" || contains_lc "$lower" "package") && ((score+=2))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_ARROW_DOWN"; }
+
+    score=0
+    contains_lc "$lower" "depend" && ((score+=3))
+    contains_lc "$lower" "package" && ((score+=2))
+    contains_lc "$lower" "npm" && ((score+=2))
+    contains_lc "$lower" "yarn" && ((score+=2))
+    contains_lc "$lower" "pip" && ((score+=2))
+    contains_lc "$lower" "gem" && ((score+=2))
+    contains_lc "$lower" "install" && ((score+=2))
+    contains_lc "$lower" "uninstall" && ((score+=2))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_PACKAGE"; }
     
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_GEAR"
-    fi
-    
-    #--------------------------------------------------------------------------
+    # Configuration (⚙️ / 🔧)
+    score=0
+    contains_lc "$lower" "config" && ((score+=3))
+    contains_lc "$lower" "setup" && ((score+=2))
+    contains_lc "$lower" "env" && ((score+=2))
+    contains_lc "$lower" "environment" && ((score+=2))
+    contains_lc "$lower" "build" && ((score+=1))
+    contains_lc "$lower" "webpack" && ((score+=2))
+    contains_lc "$lower" "babel" && ((score+=2))
+    contains_lc "$lower" "tsconfig" && ((score+=2))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_GEAR"; }
+
+    score=0
+    contains_lc "$lower" "settings" && ((score+=3))
+    contains_lc "$lower" ".env" && ((score+=3))
+    contains_lc "$lower" "properties" && ((score+=2))
+    contains_lc "$lower" "ini" && ((score+=1))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_WRENCH"; }
+
+    # Release / tags / types (🏷️)
+    score=0
+    contains_lc "$lower" "tag" && ((score+=3))
+    contains_lc "$lower" "version" && ((score+=2))
+    contains_lc "$lower" "types" && ((score+=4))
+    contains_lc "$lower" "type" && ((score+=2))
+    contains_lc "$lower" "typedef" && ((score+=2))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_LABEL"; }
+
     # Major refactoring/rewrite (🔨)
-    #--------------------------------------------------------------------------
     score=0
-    contains "$msg" "rewrite" && ((score+=3))
-    contains "$msg" "rework" && ((score+=2))
-    contains "$msg" "redesign" && ((score+=2))
-    contains "$msg" "architect" && ((score+=5))
-    contains "$msg" "migration" && ((score+=2))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_HAMMER"
-    fi
-    
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "rewrite" && ((score+=3))
+    contains_lc "$lower" "rework" && ((score+=2))
+    contains_lc "$lower" "redesign" && ((score+=2))
+    contains_lc "$lower" "architect" && ((score+=5))
+    contains_lc "$lower" "migration" && ((score+=2))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_HAMMER"; }
+
     # Remove/Delete (🗑️)
-    #--------------------------------------------------------------------------
     score=0
-    contains "$msg" "remove" && ((score+=3))
-    contains "$msg" "delete" && ((score+=3))
-    contains "$msg" "deprecat" && ((score+=3))
-    contains "$msg" "cleanup" && ((score+=1))
-    contains "$msg" "unused" && ((score+=2))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_WASTEBASKET"
-    fi
-    
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "remove" && ((score+=3))
+    contains_lc "$lower" "delete" && ((score+=3))
+    contains_lc "$lower" "deprecat" && ((score+=3))
+    contains_lc "$lower" "cleanup" && ((score+=1))
+    contains_lc "$lower" "unused" && ((score+=2))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_WASTEBASKET"; }
+
     # Deploy (🚀)
-    #--------------------------------------------------------------------------
     score=0
-    contains "$msg" "deploy" && ((score+=3))
-    contains "$msg" "release" && ((score+=2))
-    contains "$msg" "ship" && ((score+=2))
-    contains "$msg" "staging" && ((score+=1))
-    contains "$msg" "production" && ((score+=1))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_ROCKET"
-    fi
-    
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "deploy" && ((score+=3))
+    contains_lc "$lower" "release" && ((score+=2))
+    contains_lc "$lower" "ship" && ((score+=2))
+    contains_lc "$lower" "staging" && ((score+=1))
+    contains_lc "$lower" "production" && ((score+=1))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_ROCKET"; }
+
     # SEO (🔍)
-    #--------------------------------------------------------------------------
     score=0
-    contains "$msg" "seo" && ((score+=3))
-    contains "$msg" "metadata" && ((score+=2))
-    contains "$msg" "sitemap" && ((score+=2))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_MAG"
-    fi
-    
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "seo" && ((score+=3))
+    contains_lc "$lower" "metadata" && ((score+=2))
+    contains_lc "$lower" "sitemap" && ((score+=2))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_MAG"; }
+
     # Translations (🗣️)
-    #--------------------------------------------------------------------------
     score=0
-    contains "$msg" "translation" && ((score+=3))
-    contains "$msg" "i18n" && ((score+=3))
-    contains "$msg" "locale" && ((score+=2))
-    contains "$msg" "language" && ((score+=2))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_LANG"
-    fi
-    
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "translation" && ((score+=3))
+    contains_lc "$lower" "i18n" && ((score+=3))
+    contains_lc "$lower" "locale" && ((score+=2))
+    contains_lc "$lower" "language" && ((score+=2))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_LANG"; }
+
+    # Text / copy / comments (💬 / 💡)
+    score=0
+    contains_lc "$lower" "copy" && ((score+=3))
+    contains_lc "$lower" "text" && ((score+=2))
+    contains_lc "$lower" "string" && ((score+=2))
+    contains_lc "$lower" "message" && ((score+=1))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_SPEECH"; }
+
+    score=0
+    contains_lc "$lower" "comment" && ((score+=3))
+    contains_lc "$lower" "note" && ((score+=2))
+    contains_lc "$lower" "todo" && ((score+=2))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_BULB"; }
+
+    # Mocks (🎭)
+    score=0
+    contains_lc "$lower" "mock" && ((score+=4))
+    contains_lc "$lower" "stub" && ((score+=3))
+    contains_lc "$lower" "fake" && ((score+=2))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_PERFORM"; }
+
     # Analytics/Benchmarks (📈)
-    #--------------------------------------------------------------------------
     score=0
-    contains "$msg" "analytics" && ((score+=3))
-    contains "$msg" "metrics" && ((score+=2))
-    contains "$msg" "dashboard" && ((score+=1))
-    contains "$msg" "benchmark" && ((score+=3))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_CHART"
-    fi
-    
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "analytics" && ((score+=3))
+    contains_lc "$lower" "metrics" && ((score+=2))
+    contains_lc "$lower" "dashboard" && ((score+=1))
+    contains_lc "$lower" "benchmark" && ((score+=3))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_CHART"; }
+
     # Automation (🔄)
-    #--------------------------------------------------------------------------
     score=0
-    contains "$msg" "automate" && ((score+=3))
-    contains "$msg" "ci/cd" && ((score+=2))
-    contains "$msg" "github" && ((score+=3))
-    contains "$msg" "github action" && ((score+=4))
-    contains "$msg" "workflow" && ((score+=1))
-    
-    if (( score > best_score )); then
-        best_score=$score
-        best_category="$EMOJI_REPEAT"
-    fi
-    
-    #--------------------------------------------------------------------------
-    # Return best match or default
-    #--------------------------------------------------------------------------
+    contains_lc "$lower" "automate" && ((score+=3))
+    contains_lc "$lower" "ci/cd" && ((score+=2))
+    contains_lc "$lower" "github" && ((score+=3))
+    contains_lc "$lower" "github action" && ((score+=4))
+    contains_lc "$lower" "workflow" && ((score+=1))
+    (( score > best_score )) && { best_score=$score; best_category="$EMOJI_REPEAT"; }
+
     if [[ -n "$best_category" ]] && (( best_score > 0 )); then
         debug "Best category: $best_category (score: $best_score)"
         echo "$best_category"
         return 0
     fi
-    
+
     return 1
 }
 
@@ -471,7 +403,7 @@ select_gitmoji() {
     
     # 1. Special commits (highest priority)
     local result
-    result=$(detect_special "$msg")
+    result=$(detect_special "$msg" || true)
     if [[ -n "$result" ]]; then
         debug "Special: $result"
         echo "$result"
@@ -479,7 +411,7 @@ select_gitmoji() {
     fi
     
     # 2. Priority cases (security, linter)
-    result=$(detect_priority "$msg")
+    result=$(detect_priority "$msg" || true)
     if [[ -n "$result" ]]; then
         debug "Priority: $result"
         echo "$result"
@@ -487,7 +419,7 @@ select_gitmoji() {
     fi
     
     # 3. Simple fixes (🩹)
-    result=$(detect_simple_fix "$msg")
+    result=$(detect_simple_fix "$msg" || true)
     if [[ -n "$result" ]]; then
         debug "Simple fix: $result"
         echo "$result"
@@ -495,7 +427,7 @@ select_gitmoji() {
     fi
     
     # 4. Main category detection
-    result=$(detect_category "$msg")
+    result=$(detect_category "$msg" || true)
     if [[ -n "$result" ]]; then
         debug "Category: $result"
         echo "$result"
@@ -545,6 +477,14 @@ output_json() {
         "$EMOJI_PACKAGE") emoji_name="package" ;;
         "$EMOJI_LOCK") emoji_name="lock" ;;
         "$EMOJI_GEAR") emoji_name="gear" ;;
+        "$EMOJI_WRENCH") emoji_name="wrench" ;;
+        "$EMOJI_LABEL") emoji_name="label" ;;
+        "$EMOJI_SPEECH") emoji_name="speech_balloon" ;;
+        "$EMOJI_BULB") emoji_name="bulb" ;;
+        "$EMOJI_PERFORM") emoji_name="performing_arts" ;;
+        "$EMOJI_ARROW_UP") emoji_name="arrow_up" ;;
+        "$EMOJI_ARROW_DOWN") emoji_name="arrow_down" ;;
+        "$EMOJI_CHECK") emoji_name="white_check_mark" ;;
         "$EMOJI_WASTEBASKET") emoji_name="wastebasket" ;;
         "$EMOJI_BROOM") emoji_name="broom" ;;
         "$EMOJI_HAMMER") emoji_name="hammer" ;;
@@ -582,16 +522,21 @@ main() {
             --conventional|-c)
                 mode="conventional"
                 ;;
+            --emoji-only|-e)
+                mode="emoji"
+                ;;
             --help|-h)
                 echo "Usage: gitmoji_selector.sh [options] <message>"
                 echo ""
                 echo "Options:"
                 echo "  --conventional, -c  Output in conventional commits format"
-                echo "  --help, -h         Show this help"
-                echo "  --debug            Enable debug output"
+                echo "  --emoji-only, -e    Output only emoji"
+                echo "  --help, -h          Show this help"
+                echo "  --debug             Enable debug output"
                 echo ""
                 echo "Examples:"
                 echo "  gitmoji_selector.sh \"Add user authentication\""
+                echo "  gitmoji_selector.sh --emoji-only \"fix typo\""
                 echo "  gitmoji_selector.sh --conventional feat auth \"Add login\""
                 exit 0
                 ;;
@@ -621,13 +566,21 @@ main() {
             exit 1
         fi
         generate_conventional "$type" "$scope" "$message"
+        return
+    fi
+
+    if [[ -z "$message" ]]; then
+        echo "Error: No message provided" >&2
+        exit 1
+    fi
+
+    if [[ "$mode" == "emoji" ]]; then
+        select_gitmoji "$message"
     else
-        if [[ -z "$message" ]]; then
-            echo "Error: No message provided" >&2
-            exit 1
-        fi
         output_json "$message"
     fi
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi
