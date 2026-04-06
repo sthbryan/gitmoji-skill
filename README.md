@@ -20,6 +20,10 @@ git clone https://github.com/YOUR_USER/gitmoji-skill.git
 bash gitmoji_selector.sh "fix critical security bug"
 # → 🔐
 
+# Get emoji only (fast)
+bash gitmoji_selector.sh --emoji-only "upgrade dependencies"
+# → ⬆️
+
 # Generate full commit message
 bash gitmoji_selector.sh --conventional feat auth "Add login"
 # → ✨ feat(auth): Add login
@@ -51,6 +55,14 @@ git commit -m "✨ feat(auth): Add login"
 | 🔀 | Merge |
 | 🚑 | Hotfix |
 | 🚧 | WIP |
+| ✅ | Tests/build passing |
+| ⬆️ | Upgrade dependencies |
+| ⬇️ | Downgrade dependencies |
+| 🔧 | Settings/config files |
+| 🏷️ | Tags/types/version |
+| 💬 | Copy/text changes |
+| 💡 | Comments/notes |
+| 🎭 | Mocks/stubs |
 
 ## Run Tests
 
