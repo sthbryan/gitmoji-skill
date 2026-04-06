@@ -1,34 +1,66 @@
 # Gitmoji Commits
 
-Semantic commits with gitmoji emojis.
+> Semantic commit messages with gitmoji emojis. No dependencies.
 
-## Quick Start
+## Install
 
 ```bash
-# Get emoji suggestion
-bash scripts/gitmoji_selector.sh "add user authentication"
-# Output: ✨
+# Download and chmod
+curl -O https://raw.githubusercontent.com/YOUR_USER/gitmoji-skill/main/scripts/gitmoji_selector.sh
+chmod +x gitmoji_selector.sh
 
-# Conventional commits format
-bash scripts/gitmoji_selector.sh --conventional feat auth "Add login"
-# Output: ✨ feat(auth): Add login
+# Or clone
+git clone https://github.com/YOUR_USER/gitmoji-skill.git
+```
 
-# Commit workflow
+## Usage
+
+```bash
+# Auto-detect emoji from message
+bash gitmoji_selector.sh "fix critical security bug"
+# → 🔐
+
+# Generate full commit message
+bash gitmoji_selector.sh --conventional feat auth "Add login"
+# → ✨ feat(auth): Add login
+
+# Then commit
 git add .
 git commit -m "✨ feat(auth): Add login"
 ```
 
-## Gitmoji Reference
+## Emoji Map
 
-✨ Feature | 🐛 Bug fix | 🩹 Simple fix | 📝 Docs | 🧪 Tests
-♻️ Refactor | ⚡ Performance | 💄 UI/Styles | 📦 Deps | 🔐 Security
-⚙️ Config | 🗑️ Remove | 🔨 Major | 🚀 Deploy
+| Emoji | When to use |
+|-------|-------------|
+| ✨ | New feature |
+| 🐛 | Bug fix |
+| 🩹 | Quick fix (typo, one-liner) |
+| 📝 | Documentation |
+| 🧪 | Tests |
+| ♻️ | Refactor |
+| ⚡ | Performance |
+| 💄 | UI/Styles |
+| 📦 | Dependencies |
+| 🔐 | Security |
+| ⚙️ | Config |
+| 🗑️ | Remove code |
+| 🔨 | Major rewrite |
+| 🚀 | Deploy |
+| ⏪ | Revert |
+| 🔀 | Merge |
+| 🚑 | Hotfix |
+| 🚧 | WIP |
 
-See `references/gitmoji-guide.md` for full reference.
+## Run Tests
 
-## Files
+```bash
+bash scripts/test.sh
+```
 
-- `SKILL.md` — Skill definition
-- `scripts/gitmoji_selector.sh` — Emoji selector (bash, no deps)
-- `references/gitmoji-guide.md` — Complete reference
-- `scripts/test.sh` — Run tests
+## As AI Agent Skill
+
+Install in Claude Code:
+```bash
+npx skills add https://github.com/YOUR_USER/gitmoji-skill --skill gitmoji-commits
+```
