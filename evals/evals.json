@@ -1,0 +1,20 @@
+{
+  "skill_name": "gitmoji-commits",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Commit my changes with a good commit message that uses gitmoji",
+      "expected_output": "A gitmoji-prefixed commit message following Conventional Commits format"
+    },
+    {
+      "id": 2,
+      "prompt": "I have unstaged changes for a new feature. Help me stage and commit them properly.",
+      "expected_output": "Properly staged changes with gitmoji commit message"
+    },
+    {
+      "id": 3,
+      "prompt": "Split my work into multiple commits - I changed auth, UI, and config files",
+      "expected_output": "Multiple commits with appropriate gitmojis for each type of change"
+    }
+  ]
+}
