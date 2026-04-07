@@ -33,6 +33,43 @@ test_gitmoji() {
     fi
 }
 
+test_conventional() {
+    local type="$1"
+    local scope="$2"
+    local message="$3"
+    local expected="$4"
+    local result
+
+    result=$(generate_conventional "$type" "$scope" "$message")
+
+    if [[ "$result" == "$expected" ]]; then
+        echo "✅ conventional: $type $scope $message"
+        ((passed++))
+    else
+        echo "❌ conventional: $type $scope $message"
+        echo "   Got: $result"
+        echo "   Expected: $expected"
+        ((failed++))
+    fi
+}
+
+test_cli_error() {
+    local cmd="$1"
+    local label="$2"
+
+    eval "$cmd" >/dev/null 2>&1
+    local code=$?
+
+    if [[ $code -ne 0 ]]; then
+        echo "✅ $label"
+        ((passed++))
+    else
+        echo "❌ $label"
+        echo "   Expected non-zero exit code"
+        ((failed++))
+    fi
+}
+
 # Special cases
 test_gitmoji "revert auth module" "⏪"
 test_gitmoji "merge feature/auth" "🔀"
@@ -71,12 +108,25 @@ test_gitmoji "setup GitHub Actions workflow" "🔄"
 
 # Added auto-detect emojis
 test_gitmoji "upgrade dependencies" "⬆️"
+test_gitmoji "bump package version" "⬆️"
 test_gitmoji "downgrade dependency version" "⬇️"
+test_gitmoji "rollback version of dependency" "⬇️"
 test_gitmoji "update app settings" "🔧"
+test_gitmoji "tune runtime settings" "🔧"
 test_gitmoji "add types for api" "🏷️"
+test_gitmoji "add type definitions" "🏷️"
 test_gitmoji "update copy text" "💬"
+test_gitmoji "change user-facing strings" "💬"
 test_gitmoji "add inline comments" "💡"
+test_gitmoji "add TODO note in code" "💡"
 test_gitmoji "add API mocks" "🎭"
+test_gitmoji "mock payment gateway in tests" "🎭"
+
+# Priority/conflict regression tests
+test_gitmoji "fix security bug in auth" "🔐"
+test_gitmoji "revert security patch" "⏪"
+test_gitmoji "hotfix security vulnerability" "🚑"
+test_gitmoji "merge docs update" "🔀"
 
 # CLI smoke tests (keep minimal)
 echo ""
@@ -92,15 +142,12 @@ else
     ((failed++))
 fi
 
-result=$(generate_conventional "feat" "auth" "Add login")
-if [[ "$result" == "✨ feat(auth): Add login" ]]; then
-    echo "✅ Conventional format works"
-    ((passed++))
-else
-    echo "❌ Conventional format failed"
-    echo "   Got: $result"
-    ((failed++))
-fi
+test_conventional "feat" "auth" "Add login" "✨ feat(auth): Add login"
+test_conventional "fix" "" "Resolve crash" "🐛 fix: Resolve crash"
+
+# CLI error handling
+test_cli_error "bash scripts/gitmoji_selector.sh" "CLI fails without message"
+test_cli_error "bash scripts/gitmoji_selector.sh --conventional feat" "CLI fails with incomplete --conventional"
 
 echo ""
 echo "=============================="
