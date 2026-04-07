@@ -295,6 +295,7 @@ detect_category() {
     contains_lc "$lower" "tag" && ((score+=3))
     contains_lc "$lower" "version" && ((score+=2))
     contains_lc "$lower" "types" && ((score+=4))
+    contains_lc "$lower" "type definition" && ((score+=4))
     contains_lc "$lower" "type" && ((score+=2))
     contains_lc "$lower" "typedef" && ((score+=2))
     (( score > best_score )) && { best_score=$score; best_category="$EMOJI_LABEL"; }
