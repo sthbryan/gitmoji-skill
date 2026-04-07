@@ -2,18 +2,7 @@
 
 > Semantic commit messages with gitmoji emojis. No dependencies.
 
-## Install
-
-```bash
-# Download and chmod
-curl -O https://raw.githubusercontent.com/YOUR_USER/gitmoji-skill/main/scripts/gitmoji_selector.sh
-chmod +x gitmoji_selector.sh
-
-# Or clone
-git clone https://github.com/YOUR_USER/gitmoji-skill.git
-```
-
-## Usage
+## Script Usage
 
 ```bash
 # Auto-detect emoji from message
@@ -70,9 +59,15 @@ git commit -m "✨ feat(auth): Add login"
 bash scripts/test.sh
 ```
 
-## As AI Agent Skill
+## Install skill
 
-Install in Claude Code:
+Install using the Skills CLI:
 ```bash
-npx skills add https://github.com/YOUR_USER/gitmoji-skill --skill gitmoji-commits
+# Go to your project directory and run:
+npx skills add https://github.com/sthbryan/gitmoji-skill --skill gitmoji-commits
+```
+
+or globally:
+```bash
+npx skills add https://github.com/sthbryan/gitmoji-skill --skill gitmoji-commits -g -y 
 ```
